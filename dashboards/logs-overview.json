@@ -1,0 +1,353 @@
+{
+  "uid": "agent-lab-logs",
+  "title": "Agent Lab — Logs Overview",
+  "tags": ["agent-lab", "loki", "logs"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "description": "Log volume and error overview across all Loki streams. 'Hosts' = journal (Alloy on salvor/gadfium) + syslog (OpenWrt router); 'containers' = Docker VM file collector (no host label, so the host variable does not filter that panel). Ralink WiFi driver logs normal WPA events at warning level — see the DNS dashboard for context.",
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+        "query": "label_values(host)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": ["All"], "value": ["$__all"] }
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Log lines (1h) — hosts",
+      "description": "journal + syslog volume in the last hour (salvor, gadfium, router).",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({job=~\"journal|syslog\", host=~\"$host\"}[1h])) or vector(0)",
+          "legendFormat": "hosts",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Log lines (1h) — containers",
+      "description": "Docker VM container log volume in the last hour (no host label on these streams).",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({job=\"containers\"}[1h])) or vector(0)",
+          "legendFormat": "containers",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Error lines (24h)",
+      "description": "Total error-level lines across all streams in the last 24 hours.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({level=\"error\"}[24h])) or vector(0)",
+          "legendFormat": "errors",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Log rate by host",
+      "description": "Lines per second from journal + syslog streams, grouped by host.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum by (host) (count_over_time({job=~\"journal|syslog\", host=~\"$host\"}[$__interval]))",
+          "legendFormat": "{{host}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Container log rate (Docker VM)",
+      "description": "Lines per second from the Docker VM container file collector. No host label exists on these streams.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({job=\"containers\"}[$__interval]))",
+          "legendFormat": "containers",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "bargauge",
+      "title": "Top apps by volume (1h)",
+      "description": "Which journald units / syslog apps are producing the most log lines in the last hour.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "continuous-BlPu" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "topk(15, sum by (app) (count_over_time({job=~\"journal|syslog\"}[1h])))",
+          "legendFormat": "{{app}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Log level distribution (all streams)",
+      "description": "Lines per second by level across every stream. 'warning' is inflated by the Ralink WiFi driver logging normal WPA events at warning priority.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "warning" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "info" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "debug" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "grey" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum by (level) (count_over_time({job=~\".+\"}[$__interval]))",
+          "legendFormat": "{{level}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Top error sources (24h)",
+      "description": "Which app/host pairs produced the most error-level lines in the last 24 hours.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "errors (24h)" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "topk(10, sum by (app, host) (count_over_time({level=\"error\", job=~\"journal|syslog\"}[24h])))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "Value": "errors (24h)" },
+            "hideByName": { "Time": true }
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "logs",
+      "title": "Recent errors (all hosts)",
+      "description": "Latest error-level log lines. Filter with the host variable where supported.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "{level=\"error\", host=~\"$host\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
