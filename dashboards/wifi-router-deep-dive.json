@@ -1,0 +1,320 @@
+{
+  "uid": "agent-lab-wifi",
+  "title": "Agent Lab — WiFi & Router Deep Dive",
+  "tags": ["agent-lab", "wifi", "router", "loki"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "description": "WiFi security events on the OpenWrt router (Ralink driver), all from Loki syslog. Context: '4Way-MSG1 timeout' = a client failing the WPA 4-way handshake (flaky or misconfigured client); 'IE_WLAN_EXTENSION: no handler for extension_id:137' = a client offering an unknown vendor IE; PMKID cache lines appear on disconnects ('pStaCfg is null' is a driver bug signature). Note: per-MAC aggregation was deliberately left out — the MCP tool cannot verify grouped Loki metric results, so raw lines (with MACs) are shown in the table instead.",
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "WPA handshake timeouts (6h)",
+      "description": "4Way-MSGx timeout events from the Ralink driver in the last 6 hours. Each one is a client that failed to complete WPA authentication.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\"} |~ \"4Way-MSG[0-9]+ timeout\" [6h])) or vector(0)",
+          "legendFormat": "timeouts",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "PMKID events (24h)",
+      "description": "PMKID cache lines in the last 24 hours. Occasional deletions are normal on client disconnect; 'pStaCfg is null' indicates a driver bug.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\"} |~ \"(?i)pmkid\" [24h])) or vector(0)",
+          "legendFormat": "pmkid",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Unknown WLAN IE extensions (24h)",
+      "description": "Association requests carrying a vendor extension the Ralink driver does not handle (extension_id:137). Points at a specific client firmware.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\"} |~ \"no handler for extension_id\" [24h])) or vector(0)",
+          "legendFormat": "unknown IE",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "DHCP offers (6h)",
+      "description": "DHCPOFFER events from dnsmasq in the last 6 hours — a proxy for how many clients are requesting leases.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({app=\"dnsmasq-dhcp\"} |~ \"DHCPOFFER\" [6h])) or vector(0)",
+          "legendFormat": "offers",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "WPA handshake timeouts (1h buckets)",
+      "description": "When clients fail the WPA 4-way handshake. A burst means a client repeatedly retrying association.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\"} |~ \"4Way-MSG[0-9]+ timeout\" [1h])) or vector(0)",
+          "legendFormat": "timeouts",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "DHCP offers + ACKs (1h buckets)",
+      "description": "dnsmasq lease events. Spikes correlate with clients joining the network or renewing.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({app=\"dnsmasq-dhcp\"} |~ \"DHCP(OFFER|ACK)\" [1h])) or vector(0)",
+          "legendFormat": "offers+acks",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Router kernel error rate (1h buckets)",
+      "description": "Error-level kernel syslog lines per hour. On this router the dominant sources are Ralink WiFi driver events.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\", app=\"kernel\", level=\"error\"}[1h])) or vector(0)",
+          "legendFormat": "kernel errors",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Recent WiFi security events (raw lines)",
+      "description": "Latest WPA timeout / PMKID / unknown-IE lines. Client MACs are in the line text ('timeout with <mac>'). Shown as raw lines because grouped per-MAC metric results cannot be verified through the MCP tooling.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Time" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "{host=\"router\"} |~ \"(?i)(4Way|pmkid|extension_id)\" | line format \"{{.line}}\"",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "limit",
+          "options": { "limit": 25 }
+        }
+      ]
+    }
+  ]
+}
