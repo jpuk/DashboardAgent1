@@ -1,0 +1,246 @@
+{
+  "uid": "agent-lab-dns",
+  "title": "Agent Lab — DNS & Resolver Health",
+  "tags": ["agent-lab", "dns", "dnsmasq"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "description": "DNS health from the data that exists: blackbox DNS-lookup time per probed target (Prometheus) and dnsmasq activity on the OpenWrt router (Loki). NOTE: no bind9/named metrics or logs exist in this stack — if a bind9 server is expected, its exporter/log shipping is missing (see FINDINGS.md).",
+  "templating": {
+    "list": [
+      {
+        "name": "target",
+        "label": "Target",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+        "query": { "query": "label_values(probe_dns_lookup_time_seconds, instance)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": ["All"], "value": ["$__all"] }
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "DNS lookup time (last probe)",
+      "description": "Time the blackbox module spent resolving each target. Sub-microsecond = instant/local resolution.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 6,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.01 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "probe_dns_lookup_time_seconds{instance=~\"$target\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "DHCP offers + ACKs (1h)",
+      "description": "dnsmasq lease events on the OpenWrt router in the last hour. Quiet networks legitimately show 0.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({app=\"dnsmasq-dhcp\"} |~ \"DHCP(OFFER|ACK)\" [1h])) or vector(0)",
+          "legendFormat": "dnsmasq",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Router log lines (6h)",
+      "description": "Total syslog volume from the OpenWrt router. The router only logs on events, so flat/low values are normal.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum(count_over_time({host=\"router\"}[6h])) or vector(0)",
+          "legendFormat": "router",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "DNS lookup time per target",
+      "description": "Trend of blackbox DNS resolution time. A jump to seconds (or missing data) indicates resolver trouble.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "probe_dns_lookup_time_seconds{instance=~\"$target\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Router events by app (1h buckets)",
+      "description": "Log volume per syslog app on the OpenWrt router. dnsmasq-dhcp = DHCP/DNS activity; kernel = WiFi/WPA driver events.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "sum by (app) (count_over_time({host=\"router\"}[1h]))",
+          "legendFormat": "{{app}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Recent router warnings & errors",
+      "description": "Latest warning/error-level lines from the OpenWrt router. Note: the Ralink WiFi driver logs normal WPA association events at 'warning' priority, so this stream contains expected noise alongside real problems.",
+      "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Time" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
+          "expr": "{host=\"router\", level=~\"warning|error\"} | line format \"{{.line}}\"",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "limit",
+          "options": { "limit": 25 }
+        }
+      ]
+    }
+  ]
+}
