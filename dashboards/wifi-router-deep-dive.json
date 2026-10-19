@@ -287,8 +287,8 @@
     {
       "id": 8,
       "type": "table",
-      "title": "Recent WiFi security events (raw lines)",
-      "description": "Latest WPA timeout / PMKID / unknown-IE lines. Client MACs are in the line text ('timeout with <mac>'). Shown as raw lines because grouped per-MAC metric results cannot be verified through the MCP tooling.",
+      "title": "Recent WiFi security & association events (raw lines)",
+      "description": "Latest WPA timeout / PMKID / unknown-IE / client add-remove / handshake-completion lines from the Ralink driver. Client MACs are in the line text ('timeout with <mac>', 'New Sta:<mac>'). Broadened beyond 4Way/PMKID to include MacTable and PeerPairMsg events because those rarer events alone are too sparse (~12/day) for a reliable raw-line view; every associate/disassociate cycle produces several of these. Shown as raw lines because grouped per-MAC metric results cannot be verified through the MCP tooling.",
       "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "fieldConfig": {
@@ -304,7 +304,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
-          "expr": "{host=\"router\"} |~ \"(?i)(4Way|pmkid|extension_id)\" | line format \"{{.line}}\"",
+          "expr": "{host=\"router\"} |~ \"(?i)(4Way|pmkid|extension_id|MacTable(Insert|Delete)Entry|PeerPairMsg)\"",
           "legendFormat": "",
           "refId": "A"
         }

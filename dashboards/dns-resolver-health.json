@@ -214,7 +214,7 @@
       "id": 6,
       "type": "table",
       "title": "Recent router warnings & errors",
-      "description": "Latest warning/error-level lines from the OpenWrt router. Note: the Ralink WiFi driver logs normal WPA association events at 'warning' priority, so this stream contains expected noise alongside real problems.",
+      "description": "Latest warning/error-level lines from the OpenWrt router in the current time range. Event-driven, so a quiet hour can legitimately show nothing. Note: the Ralink WiFi driver logs normal WPA association events at 'warning' priority, so this stream contains expected noise alongside real problems.",
       "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
       "gridPos": { "h": 7, "w": 24, "x": 0, "y": 12 },
       "fieldConfig": {
@@ -230,7 +230,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
-          "expr": "{host=\"router\", level=~\"warning|error\"} | line format \"{{.line}}\"",
+          "expr": "{host=\"router\", level=~\"warning|error\"}",
           "legendFormat": "",
           "refId": "A"
         }

@@ -1,6 +1,5 @@
 # PROGRESS — Overnight observability pass (2026-10-19)
 
-STATUS: COMPLETE
 
 Phase: **Done** — all three phases finished; final commit made. If a future session reads this: the build is complete, see IMPROVE.md for how to make one small verified improvement per session.
 
@@ -26,7 +25,6 @@ Phase: **Done** — all three phases finished; final commit made. If a future se
 - None unresolved. (Transient MCP gateway timeouts early in the pass recovered on retry; not 3-strike territory.)
 
 ## Key findings (full detail in FINDINGS.md)
-- SV-HV4 windows_exporter down ≥24h (would fire alert #1 today).
 - Juniper Determinist RE CPU 41–88% sustained-ish — abnormal for idle L2.
 - gadfium 89–91°C at ~2% load; /home 77%; amdxdna NPU `SVA bind device failed, ret -19` recurring (22 err lines/24h).
 - Router: flaky WiFi client c0:dd:8a:4e:1e:d7 (4Way-MSG1 timeouts); acme.sh `--debug` spamming ~32 fake error-level lines per renewal.
@@ -34,3 +32,7 @@ Phase: **Done** — all three phases finished; final commit made. If a future se
 
 ## Next action (for a future session)
 Per IMPROVE.md: pick ONE small improvement, verify it, commit. Candidates ranked in FINDINGS.md top-5 (host label on container streams is the cheapest; cAdvisor is the highest value).
+
+## Verification failed (added by overnight.sh, not by you)
+The panel check found queries that error or return no data. The list is at the end of your instructions.
+Fix this before claiming completion.

@@ -49,6 +49,7 @@ For every panel: run its query through the MCP tools first and confirm it
 returns data. Never ship a panel you haven't verified. Use template
 variables rather than hard-coded hosts. Save each dashboard's JSON to
 `dashboards/<name>.json` as well as to Grafana.
+- Panels for rare events (errors, warnings, security events) can be legitimately empty. Never broaden a filter just to make a panel return data. An empty panel because nothing went wrong is correct; fix only syntax errors and wrong label or metric names.
 
 To create a dashboard, call the `update_dashboard` tool. It creates a new
 dashboard when the JSON has no existing uid. Pass the dashboard JSON, the

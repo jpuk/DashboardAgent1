@@ -329,8 +329,8 @@
     {
       "id": 9,
       "type": "logs",
-      "title": "Recent errors (all hosts)",
-      "description": "Latest error-level log lines. Filter with the host variable where supported.",
+      "title": "Recent warnings & errors (all hosts)",
+      "description": "Latest warning/error-level lines across all streams in the current time range. Broadened from error-only (~3 lines/h — too sparse for a reliable view) to include 'warning'; the Ralink WiFi driver logs normal WPA events at warning priority, so expect router noise here (see DNS dashboard). Host variable removed from this panel for robustness — use 'Top error sources (24h)' for per-host breakdown.",
       "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "options": {
@@ -343,7 +343,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "ag1mgl00sdszkc" },
-          "expr": "{level=\"error\", host=~\"$host\"}",
+          "expr": "{level=~\"error|warning\"}",
           "legendFormat": "",
           "refId": "A"
         }

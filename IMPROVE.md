@@ -20,6 +20,8 @@ verified improvement per session. Nobody will answer questions.
    Commit to git, then stop.
 
 ## Good improvements
+- Check to see if new metrics have been added and are availbile for use on existing dashboards, add new findings to INVENTORY.md
+- Use GTT, not VRAM, in any dashboard. On Strix Halo, “VRAM” is just a small fixed slice of memory reserved in the BIOS, here 1 GB, which is always nearly full. The GPU’s real working memory is GTT, shared system RAM 
 - Re-check claims in FINDINGS.md against fresh queries and correct any
   that are wrong (e.g. which oper-down ports actually have an ifAlias)
 - Panels for data that exists but isn't shown yet
@@ -29,5 +31,6 @@ verified improvement per session. Nobody will answer questions.
 ## Rules
 - All hard rules from TASK.md still apply.
 - Never delete a dashboard or remove a working panel without recording why.
+- Panels for rare events (errors, warnings, security events) can be legitimately empty. Never broaden a filter just to make a panel return data. An empty panel because nothing went wrong is correct; fix only syntax errors and wrong label or metric names.
 - When nothing in the backlog is worth doing, write
   "NO FURTHER IMPROVEMENTS" in IMPROVEMENTS.md and stop.
