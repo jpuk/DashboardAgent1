@@ -1,0 +1,538 @@
+{
+  "uid": "agent-lab-switches",
+  "title": "Agent Lab — Switch & Router Interfaces",
+  "tags": ["agent-lab", "snmp", "juniper", "mikrotik"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "description": "SNMP view of the two managed switches: Juniper EX2300-C-12P 'Determinist' (10.254.2.1) and MikroTik 'PrimeMover' (10.254.2.3). Traffic, errors, port status, device health. Physical ports only where counts are shown (ifType=6); empty SFP slots count as oper-down.",
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "label": "Device",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+        "query": { "query": "label_values(ifOperStatus, instance)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": ["All"], "value": ["$__all"] }
+      },
+      {
+        "name": "interface",
+        "label": "Interface",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+        "query": { "query": "label_values(ifHCInOctets{instance=~\"$device\"}, ifAlias)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": ["All"], "value": ["$__all"] }
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Physical ports oper-down",
+      "description": "Physical (ifType=6) interfaces with oper status down. Includes empty/unpopulated SFP slots, which is normal for unused cages.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "count by (instance) ((ifOperStatus{instance=~\"$device\"} == 1) and (ifType == 6))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Physical ports admin-down",
+      "description": "Physically present interfaces disabled in software. 'No data' means none.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "count by (instance) ((ifAdminStatus{instance=~\"$device\"} == 2) and (ifType == 6))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Device CPU",
+      "description": "Juniper Routing Engine 0 CPU and MikroTik processor load. The EX2300 RE has been oscillating 40-90% recently — sustained high values on an idle L2 switch warrant investigation.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "(max by (instance) (jnxOperatingCPU{jnxOperatingDescr=\"Routing Engine 0\", instance=~\"$device\"})) or (max by (instance) (hrProcessorLoad{instance=~\"$device\"}))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Uptime",
+      "description": "sysUpTime (SNMP centiseconds / 100).",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sysUpTime{instance=~\"$device\"} / 100",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Ingress traffic per interface",
+      "description": "Rate of ifHCInOctets. Note the large bursts on the PrimeMover↔Determinist bond and Salvor Eth2 (VM traffic via both uplinks).",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifHCInOctets{instance=~\"$device\", ifAlias=~\"$interface\"}[5m])) * 8",
+          "legendFormat": "{{instance}} {{ifAlias}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Egress traffic per interface",
+      "description": "Rate of ifHCOutOctets.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifHCOutOctets{instance=~\"$device\", ifAlias=~\"$interface\"}[5m])) * 8",
+          "legendFormat": "{{instance}} {{ifAlias}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Interface errors/s",
+      "description": "Rate of ifInErrors (receive) and ifOutErrors (transmit). All interfaces were clean at build time; any rise indicates cabling, duplex mismatch or a dying port.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifInErrors{instance=~\"$device\", ifAlias=~\"$interface\"}[10m]))",
+          "legendFormat": "{{instance}} {{ifAlias}} in",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifOutErrors{instance=~\"$device\", ifAlias=~\"$interface\"}[10m]))",
+          "legendFormat": "{{instance}} {{ifAlias}} out",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Interface discards/s",
+      "description": "Rate of ifInDiscards / ifOutDiscards (drops not counted as errors).",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifInDiscards{instance=~\"$device\", ifAlias=~\"$interface\"}[10m]))",
+          "legendFormat": "{{instance}} {{ifAlias}} in",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "sum by (instance, ifAlias) (rate(ifOutDiscards{instance=~\"$device\", ifAlias=~\"$interface\"}[10m]))",
+          "legendFormat": "{{instance}} {{ifAlias}} out",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Port status (physical)",
+      "description": "Per physical port: oper status (1=down, 2=up, 3=testing, 6=admin-down), negotiated speed in Mbps, admin status (1=up, 2=down).",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 20 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "speed_mbps" },
+            "properties": [{ "id": "unit", "value": "Mbits" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "oper_status" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": 2 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "instance" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "ifOperStatus{instance=~\"$device\"} and (ifType == 6)",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "ifHighSpeed{instance=~\"$device\"} and (ifType == 6)",
+          "format": "table",
+          "instant": true,
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "ifAdminStatus{instance=~\"$device\"} and (ifType == 6)",
+          "format": "table",
+          "instant": true,
+          "refId": "C"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "A.Value": "oper_status",
+              "B.Value": "speed_mbps",
+              "C.Value": "admin_status"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Device temperature",
+      "description": "Juniper Routing Engine temperature and MikroTik processor temperature. The MikroTik gauge is divided by 10 (reported in tenths of a degree); re-verify the scale if values look wrong.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 27 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 55 },
+              { "color": "red", "value": 70 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "jnxOperatingTemp{jnxOperatingDescr=\"Routing Engine 0\", instance=~\"$device\"} or (mtxrHlProcessorTemperature{instance=~\"$device\"} / 10)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Juniper alarms",
+      "description": "jnxRedAlarmState / jnxYellowAlarmState with state 'on'. 0 = clear.",
+      "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 27 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "yellow" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 1 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "jnxRedAlarmState{jnxRedAlarmState=\"on\", instance=~\"$device\"}",
+          "legendFormat": "red",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "cg08tpxzt30u8d" },
+          "expr": "jnxYellowAlarmState{jnxYellowAlarmState=\"on\", instance=~\"$device\"}",
+          "legendFormat": "yellow",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}
